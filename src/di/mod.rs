@@ -1,23 +1,21 @@
-use crate::app::command::login_user_command::{LoginUserCommand, LoginUserRepository, PasswordServiceTrait};
+pub mod container;
 
-pub struct Container<R, S>
-where
-    R: LoginUserRepository,
-    S: PasswordServiceTrait,
-{
-    pub login_user_command: LoginUserCommand<R, S>,
+use std::sync::Arc;
+use crate::app::command::login_user_command::{LoginUserCommandTrait, LoginUserRepository, PasswordServiceTrait};
+
+// Интерфейс для DI контейнера
+pub trait DIContainer: Send + Sync {
+    fn login_user_command(&self) -> Arc<dyn LoginUserCommandTrait>;
 }
 
-impl<R, S> Container<R, S>
-where
-    R: LoginUserRepository,
-    S: PasswordServiceTrait + 'static,
-{
-    pub fn new(repository_command: R, password_service: S) -> Self {
-        let login_user_command = LoginUserCommand::new(repository_command, password_service);
+// Основной контейнер
+pub struct Container {
+    pub login_user_command: Arc<dyn LoginUserCommandTrait>,
+    // другие зависимости...
+}
 
-        Container {
-            login_user_command,
-        }
+impl DIContainer for Container {
+    fn login_user_command(&self) -> Arc<dyn LoginUserCommandTrait> {
+        Arc::clone(&self.login_user_command)
     }
 }
