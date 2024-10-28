@@ -1,0 +1,17 @@
+version: "3.8"
+
+services:
+  postgres:
+    restart: unless-stopped
+    container_name: ${PROJECT}_postgres
+    build:
+      context: ./docker/context
+      dockerfile: images/postgres/Dockerfile
+    volumes:
+      - ./docker/.data/postgres:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DATABASE}

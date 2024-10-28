@@ -1,0 +1,28 @@
+[package]
+name = "sft-grpc-server"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+chrono = "0.4.38"
+tonic = "0.12.1"
+tokio =  { version = "1.39.2", features = ["full"] }
+prost = "0.13.1"
+sqlx = { version = "0.8.0", features = ["postgres", "sqlx-postgres", "runtime-async-std", "uuid", "macros", "chrono"] }
+install = "0.0.0"
+vendor = "0.2.0"
+dotenv = "0.15.0"
+async-trait = "0.1.81"
+uuid = { version = "1.10.0", features = ["v7"] }
+url = "2.5.2"
+thiserror = "1.0.63"
+mockall = "0.13.0"
+argon2="0.5.3"
+
+[build-dependencies]
+tonic-build = "0.12.1"
+
+# server binary
+[[bin]]
+name = "server"
+path = "src/server.rs"
