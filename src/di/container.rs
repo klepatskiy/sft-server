@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use crate::app::command::login_user_command::{LoginUserCommand, LoginUserRepository, PasswordServiceTrait, LoginUserCommandTrait};
+use crate::app::command::login_user_command::{LoginUserCommand, LoginUserRepository, PasswordServiceTrait, LoginUserCommandTrait, TokenServiceTrait};
 use crate::di::DIContainer;
 
 pub struct Container {
@@ -10,10 +10,12 @@ impl Container {
     pub fn new(
         login_user_repository: Arc<dyn LoginUserRepository>,
         password_service: Arc<dyn PasswordServiceTrait>,
+        token_service: Arc<dyn TokenServiceTrait>,
     ) -> Self {
         let login_user_command = Arc::new(LoginUserCommand::new(
             login_user_repository,
             password_service,
+            token_service,
         ));
 
         Container {

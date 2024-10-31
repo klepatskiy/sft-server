@@ -13,4 +13,7 @@ pub enum AppError {
 
     #[error("Invalid credentials provided")]
     InvalidCredentials,
+
+    #[error("Что то пошло не так")]
+    SomeError,
 }

@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use argon2::{self, Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
+use argon2::{self, Argon2, PasswordHasher};
 use argon2::password_hash::SaltString;
 use thiserror::Error;
 use crate::app::command::login_user_command::PasswordServiceTrait;
@@ -19,7 +19,7 @@ pub struct PasswordService {
 }
 
 impl PasswordServiceTrait for PasswordService {
-    fn verify_password(&self, hash: &str, password: &str) -> Result<bool, AppError> {
+    fn verify_password(&self, hash: &str, password: &str) -> Result<(), AppError> {
         self.verify_password(hash, password).map_err(|_| AppError::InvalidCredentials)
     }
 }
@@ -37,19 +37,24 @@ impl PasswordService {
         Ok(password_hash.to_string())
     }
 
-    pub fn verify_password(&self, hash: &str, password: &str) -> Result<bool, PasswordServiceError> {
-        let parsed_hash = PasswordHash::new(hash).map_err(|_| PasswordServiceError::VerificationError)?;
-        self.argon2
-            .verify_password(password.as_bytes(), &parsed_hash)
-            .map_err(|_| PasswordServiceError::VerificationError)?;
-        Ok(true)
+    pub fn verify_password(&self, hash: &str, password: &str) -> Result<(), PasswordServiceError> {
+        let hash_password = self.hash_password(password)?;
+        let hash_password_str = hash_password.as_str();
+
+        if hash_password_str != hash {
+            return Err(PasswordServiceError::VerificationError);
+        }
+
+        Ok(())
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use argon2::Argon2;
 
+    // Утилита для создания экземпляра PasswordService с фиксированной солью для тестирования
     fn setup() -> PasswordService {
         PasswordService::new("test_salt".to_string(), Argon2::default())
     }
@@ -58,24 +63,30 @@ mod tests {
     fn test_hash_password_success() {
         let password_service = setup();
         let password = "secure_password";
-        let hash = password_service.hash_password(password);
-        assert!(hash.is_ok(), "Хэширование пароля не должно завершаться с ошибкой");
 
-        let second_hash = password_service.hash_password(password);
-        assert!(second_hash.is_ok(), "Второе хэширование также должно завершиться успешно");
+        // Проверка успешного хэширования пароля
+        let hash_result = password_service.hash_password(password);
+        assert!(hash_result.is_ok(), "Хэширование пароля должно завершаться без ошибок");
 
-        // Оба хэша должны быть одинаковыми, так как используется фиксированная соль
-        assert_eq!(hash.unwrap(), second_hash.unwrap(), "Хэши должны быть одинаковыми для одного пароля и фиксированной соли");
+        // Повторное хэширование для проверки использования фиксированной соли
+        let hash_again = password_service.hash_password(password);
+        assert!(hash_again.is_ok(), "Второе хэширование должно завершаться успешно");
+
+        // Проверка совпадения хэшей при одинаковом пароле и соли
+        assert_eq!(hash_result.unwrap(), hash_again.unwrap(), "Хэши должны совпадать при фиксированной соли");
     }
 
     #[test]
     fn test_verify_password_success() {
         let password_service = setup();
         let password = "secure_password";
+
+        // Хэшируем пароль
         let hash = password_service.hash_password(password).unwrap();
-        let is_valid = password_service.verify_password(&hash, password);
-        assert!(is_valid.is_ok(), "Пароль должен быть верным");
-        assert!(is_valid.unwrap(), "Пароль должен совпадать с хэшем");
+
+        // Проверка успешной верификации правильного пароля
+        let verification_result = password_service.verify_password(&hash, password);
+        assert!(verification_result.is_ok(), "Верификация пароля должна завершаться без ошибок");
     }
 
     #[test]
@@ -84,9 +95,10 @@ mod tests {
         let password = "secure_password";
         let hash = password_service.hash_password(password).unwrap();
         let wrong_password = "wrong_password";
-        let is_valid = password_service.verify_password(&hash, wrong_password);
-        assert!(is_valid.is_ok(), "Проверка пароля не должна завершаться с ошибкой");
-        assert!(!is_valid.unwrap(), "Пароль не должен совпадать с хэшем");
+
+        // Проверка верификации с неверным паролем
+        let verification_result = password_service.verify_password(&hash, wrong_password);
+        assert!(verification_result.is_err(), "Верификация с неверным паролем должна завершаться ошибкой");
     }
 
     #[test]
@@ -94,7 +106,9 @@ mod tests {
         let password_service = setup();
         let password = "secure_password";
         let invalid_hash = "invalid_hash_format";
-        let is_valid = password_service.verify_password(invalid_hash, password);
-        assert!(is_valid.is_err(), "Неверный формат хэша должен вызывать ошибку");
+
+        // Проверка верификации с неверным форматом хэша
+        let verification_result = password_service.verify_password(invalid_hash, password);
+        assert!(verification_result.is_err(), "Верификация с неправильным форматом хэша должна завершаться ошибкой");
     }
 }

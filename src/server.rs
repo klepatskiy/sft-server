@@ -12,11 +12,13 @@ use argon2::Argon2;
 use tonic::{transport::Server, Request, Response, Status};
 use crate::app::command::login_user_command::{LoginUserRepository, PasswordServiceTrait};
 use crate::auth::auth_service_server::{AuthService, AuthServiceServer};
-use crate::auth::{LoginReply, LoginRequest};
+use crate::auth::{CurrentUserReply, CurrentUserRequest, LoginReply, LoginRequest};
 use crate::di::{DIContainer};
 use crate::di::container::Container;
 use crate::repository::postgres::user::user_repository::PostgresUserRepository;
+use crate::repository::postgres::user::user_token_repository::PostgresUserTokenRepository;
 use crate::service::password_service::PasswordService;
+use crate::service::token::TokenService;
 
 pub mod auth {
     tonic::include_proto!("auth");
@@ -33,7 +35,7 @@ impl<C: DIContainer> MyAuth<C> {
 }
 
 #[tonic::async_trait]
-impl<C: DIContainer> AuthService for MyAuth<C> {
+impl<C: DIContainer + 'static> AuthService for MyAuth<C> {
     async fn login(&self, request: Request<LoginRequest>) -> Result<Response<LoginReply>, Status> {
         let req = request.get_ref();
         let result = self
@@ -47,6 +49,10 @@ impl<C: DIContainer> AuthService for MyAuth<C> {
             Err(e) => Err(Status::internal(e.to_string())),
         }
     }
+
+    async fn get_current_user(&self, request: Request<CurrentUserRequest>) -> Result<Response<CurrentUserReply>, Status> {
+        todo!()
+    }
 }
 
 #[tokio::main]
@@ -57,8 +63,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let repo = PostgresUserRepository::new(Arc::clone(&pool));
     let salt = env::var("PASSWORD_SALT").unwrap_or_else(|_| "default_salt_value".to_string());
     let password_service = PasswordService::new(salt, Argon2::default());
+    let user_token_repository = PostgresUserTokenRepository::new(Arc::clone(&pool));
+    let token_service = TokenService::new(
+        env::var("TOKEN_SECRET").unwrap_or_else(|_| "default_secret".to_string()),
+        Arc::new(user_token_repository),
+    );
 
-    let container = Container::new(Arc::new(repo), Arc::new(password_service));
+    let container = Container::new(
+        Arc::new(repo),
+        Arc::new(password_service),
+        Arc::new(token_service),
+    );
+
     let addr = "[::1]:50051".parse()?;
     let auth_service = MyAuth::new(Arc::new(container));
 

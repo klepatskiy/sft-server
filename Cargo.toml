@@ -18,6 +18,8 @@ url = "2.5.2"
 thiserror = "1.0.63"
 mockall = "0.13.0"
 argon2="0.5.3"
+jsonwebtoken= "9.3"
+serde = { version = "1.0.210", features = ["derive"] }
 
 [build-dependencies]
 tonic-build = "0.12.1"

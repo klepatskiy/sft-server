@@ -4,6 +4,7 @@ package auth;
 
 service AuthService {
   rpc Login(LoginRequest) returns (LoginReply);
+  rpc GetCurrentUser(CurrentUserRequest) returns (CurrentUserReply);
 }
 
 message LoginRequest {
@@ -14,4 +15,30 @@ message LoginRequest {
 message LoginReply {
   bool success = 1;
   string token = 2;
+}
+
+message CurrentUserRequest {}
+
+enum Gender {
+  MALE = 0;
+  FEMALE = 1;
+  OTHER = 2;
+}
+
+enum Status {
+  ONLINE = 0;
+  OFFLINE = 1;
+  IDLE = 2;
+  DO_NOT_DISTURB = 3;
+}
+
+message CurrentUserReply {
+  string id = 1;
+  string first_name = 2;
+  string last_name = 3;
+  string nickname = 4;
+  string email = 5;
+  string avatar = 6;
+  Gender gender = 7;
+  Status status = 8;
 }

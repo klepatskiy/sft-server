@@ -27,6 +27,20 @@ pub enum Gender {
     Other,
 }
 
+// impl FromStr for Gender {
+//     type Err = AppError;
+//
+//     fn from_str(s: &str) -> Result<Self, Self::Err> {
+//         match s.to_lowercase().as_str() {
+//             "male" => Ok(Gender::Male),
+//             "female" => Ok(Gender::Female),
+//             "other" => Ok(Gender::Other),
+//             _ => Err(AppError::DatabaseError("Invalid gender value".into())),
+//         }
+//     }
+// }
+
+
 #[derive(Debug, Clone, Type)]
 #[sqlx(type_name = "user_status", rename_all = "lowercase")]
 pub enum UserStatus {
@@ -35,3 +49,17 @@ pub enum UserStatus {
     Idle,
     DoNotDisturb,
 }
+
+// impl FromStr for UserStatus {
+//     type Err = AppError;
+//
+//     fn from_str(s: &str) -> Result<Self, Self::Err> {
+//         match s.to_lowercase().as_str() {
+//             "online" => Ok(UserStatus::Online),
+//             "offline" => Ok(UserStatus::Offline),
+//             "idle" => Ok(UserStatus::Idle),
+//             "donotdisturb" => Ok(UserStatus::DoNotDisturb),
+//             _ => Err(AppError::DatabaseError("Invalid gender value".into())),
+//         }
+//     }
+// }
