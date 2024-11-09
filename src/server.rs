@@ -19,6 +19,7 @@ use crate::auth::auth_service_server::{AuthService, AuthServiceServer};
 use crate::auth::{CurrentUserReply, CurrentUserRequest, LoginReply, LoginRequest};
 use crate::di::{DIContainer};
 use crate::di::container::Container;
+use crate::domain::user::user_entity::User;
 use crate::interceptor::auth_interceptor::AuthInterceptor;
 use crate::repository::postgres::user::user_repository::PostgresUserRepository;
 use crate::repository::postgres::user::user_token_repository::PostgresUserTokenRepository;
@@ -57,17 +58,24 @@ impl<C: DIContainer + 'static> AuthService for MyAuth<C> {
     }
 
     async fn get_current_user(&self, request: Request<CurrentUserRequest>) -> Result<Response<CurrentUserReply>, Status> {
-        Ok(Response::new(CurrentUserReply {
-                id: "1".to_string(),
-                first_name: "John".to_string(),
-                last_name: "Doe".to_string(),
-                nickname: "JohnDoe".to_string(),
-                email: "".to_string(),
-                avatar: "".to_string(),
+        let user_with_token = request
+            .extensions()
+            .get::<User>()
+            .ok_or_else(|| Status::unauthenticated("User not found"));
+
+        match user_with_token {
+            Ok(user) => Ok(Response::new(CurrentUserReply {
+                id: user.id.to_string(),
+                first_name: user.first_name.to_string().clone(),
+                last_name: user.last_name.clone().unwrap_or_default(),
+                nickname: user.nickname.to_string().clone(),
+                email: user.email.to_string().clone(),
+                avatar: user.avatar.to_string().clone(),
                 gender: 0,
                 status: 0,
-            })
-        )
+            })),
+            Err(e) => Err(e),
+        }
     }
 }
 

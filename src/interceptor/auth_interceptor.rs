@@ -23,7 +23,6 @@ pub struct AuthInterceptor {
 impl RequestInterceptor for AuthInterceptor {
     async fn intercept(&self, mut req: Request<BoxBody>) -> Result<Request<BoxBody>, Status> {
         if req.uri().path() == "/auth.AuthService/Login" {
-            // Пропускаем аутентификацию для метода "Login"
             return Ok(req);
         }
 
@@ -39,9 +38,7 @@ impl RequestInterceptor for AuthInterceptor {
                     }
                 };
 
-                let user_id_header_value = HeaderValue::from_str(&user_with_token.user.id.to_string())
-                    .map_err(|_e| Status::internal("Failed to convert user_id to header value"))?;
-                req.headers_mut().insert("user_id", user_id_header_value);
+                req.extensions_mut().insert(user_with_token.user);
 
                 Ok(req)
             }
