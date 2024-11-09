@@ -29,12 +29,17 @@ impl RequestInterceptor for AuthInterceptor {
 
         match req.headers().get("authorization").map(|v| v.to_str()) {
             Some(Ok(token)) => {
-                let user_with_token = self
-                    .token_service
-                    .get_user_by_token(token)
-                    .await;
+                let user_with_token = match self.token_service.get_user_by_token(token).await {
+                    Ok(user_with_token) => user_with_token,
+                    Err(AppError::InvalidCredentials) => {
+                        return Err(Status::unauthenticated("Invalid token"));
+                    },
+                    Err(_) => {
+                        return Err(Status::internal("Failed to retrieve user token"));
+                    }
+                };
 
-                let user_id_header_value = HeaderValue::from_str(&user_with_token.expect("userby toke").user.id.to_string())
+                let user_id_header_value = HeaderValue::from_str(&user_with_token.user.id.to_string())
                     .map_err(|_e| Status::internal("Failed to convert user_id to header value"))?;
                 req.headers_mut().insert("user_id", user_id_header_value);
 
