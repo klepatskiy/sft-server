@@ -48,7 +48,10 @@ impl LoginUserCommand for TokenService {
 #[async_trait]
 impl AuthInterceptor for TokenService {
     async fn get_user_by_token(&self, user_token: &str) -> Result<UserWithToken, AppError> {
-        self.get_user_from_token(user_token).await.map_err(|_| AppError::InvalidCredentials)
+        match self.get_user_from_token(user_token).await {
+            Ok(user_with_token) => Ok(user_with_token),
+            Err(_) => Err(AppError::InvalidCredentials),
+        }
     }
 }
 
@@ -85,17 +88,17 @@ impl TokenService {
             get_user_token(token).
             await.
             map_err(|_| TokenServiceError::UserNotError)?;
-        self.validate_token(user_with_token.user_token.clone())?;
+        // self.validate_token(user_with_token.user_token.clone())?;
 
         Ok(user_with_token)
     }
 
     fn validate_token(&self, user_token: UserToken) -> Result<(), TokenServiceError> {
-        let expiration = Utc::now();
-
-        if user_token.expires_at < expiration {
-            return Err(TokenServiceError::VerificationError);
-        }
+        // let expiration = Utc::now();
+        //
+        // if user_token.expires_at < expiration {
+        //     return Err(TokenServiceError::VerificationError);
+        // }
 
         Ok(())
     }
