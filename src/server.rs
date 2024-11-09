@@ -4,17 +4,22 @@ mod di;
 mod domain;
 mod repository;
 mod service;
+mod interceptor;
 
 use std::env;
 use dotenv::dotenv;
 use std::sync::Arc;
 use argon2::Argon2;
 use tonic::{transport::Server, Request, Response, Status};
+use tonic::client::GrpcService;
+use tonic_middleware::InterceptorFor;
+use tower::{service_fn, ServiceBuilder};
 use crate::app::command::login_user_command::{LoginUserRepository, PasswordServiceTrait};
 use crate::auth::auth_service_server::{AuthService, AuthServiceServer};
 use crate::auth::{CurrentUserReply, CurrentUserRequest, LoginReply, LoginRequest};
 use crate::di::{DIContainer};
 use crate::di::container::Container;
+use crate::interceptor::auth_interceptor::AuthInterceptor;
 use crate::repository::postgres::user::user_repository::PostgresUserRepository;
 use crate::repository::postgres::user::user_token_repository::PostgresUserTokenRepository;
 use crate::service::password_service::PasswordService;
@@ -24,6 +29,7 @@ pub mod auth {
     tonic::include_proto!("auth");
 }
 
+#[derive(Clone, Debug)]
 pub struct MyAuth<C: DIContainer> {
     container: Arc<C>,
 }
@@ -51,7 +57,17 @@ impl<C: DIContainer + 'static> AuthService for MyAuth<C> {
     }
 
     async fn get_current_user(&self, request: Request<CurrentUserRequest>) -> Result<Response<CurrentUserReply>, Status> {
-        todo!()
+        Ok(Response::new(CurrentUserReply {
+                id: "1".to_string(),
+                first_name: "John".to_string(),
+                last_name: "Doe".to_string(),
+                nickname: "JohnDoe".to_string(),
+                email: "".to_string(),
+                avatar: "".to_string(),
+                gender: 0,
+                status: 0,
+            })
+        )
     }
 }
 
@@ -68,6 +84,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         env::var("TOKEN_SECRET").unwrap_or_else(|_| "default_secret".to_string()),
         Arc::new(user_token_repository),
     );
+    let auth_interceptor = AuthInterceptor{
+        token_service: Arc::new(token_service.clone()),
+    };
 
     let container = Container::new(
         Arc::new(repo),
@@ -81,7 +100,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Starting gRPC Server...");
 
     Server::builder()
-        .add_service(AuthServiceServer::new(auth_service))
+        .add_service(InterceptorFor::new(AuthServiceServer::new(auth_service), auth_interceptor))
         .serve(addr)
         .await?;
 

@@ -5,9 +5,10 @@ use async_trait::async_trait;
 use thiserror::Error;
 use chrono::{Utc, Duration};
 use uuid::Uuid;
-use crate::app::command::login_user_command::{TokenServiceTrait};
+use crate::app::command::login_user_command::TokenServiceTrait as LoginUserCommand;
 use crate::app::error::AppError;
-use crate::domain::user::user_token::{UserToken};
+use crate::domain::user::user_token::{UserToken, UserWithToken};
+use crate::interceptor::auth_interceptor::TokenServiceTrait as AuthInterceptor;
 use crate::repository::postgres::user::user_token_repository::PostgresUserTokenRepository;
 
 #[derive(Debug, Error)]
@@ -26,19 +27,28 @@ struct Claims {
     exp: usize,
 }
 
+#[derive(Clone)]
 pub struct TokenService {
     secret: Arc<String>,
     postgres_user_token_repository: Arc<PostgresUserTokenRepository>,
 }
 
+
 #[async_trait]
-impl TokenServiceTrait for TokenService {
+impl LoginUserCommand for TokenService {
     fn generate_token(&self, user_id: Uuid) -> Result<String, AppError> {
         self.generate_token(user_id).map_err(|_| AppError::InvalidCredentials)
     }
 
     async fn create_user_token(&self, user_token: UserToken) -> Result<(), AppError> {
         self.postgres_user_token_repository.create_user_token(user_token).await
+    }
+}
+
+#[async_trait]
+impl AuthInterceptor for TokenService {
+    async fn get_user_by_token(&self, user_token: &str) -> Result<UserWithToken, AppError> {
+        self.get_user_from_token(user_token).await.map_err(|_| AppError::InvalidCredentials)
     }
 }
 
@@ -69,15 +79,15 @@ impl TokenService {
             .map_err(|_| TokenServiceError::CreationError)
     }
 
-    pub async fn get_user_from_token(&self, token: &str) -> Result<(), TokenServiceError> {
+    pub async fn get_user_from_token(&self, token: &str) -> Result<UserWithToken, TokenServiceError> {
         let user_with_token = self.
             postgres_user_token_repository.
             get_user_token(token).
             await.
             map_err(|_| TokenServiceError::UserNotError)?;
-        self.validate_token(user_with_token.user_token)?;
+        self.validate_token(user_with_token.user_token.clone())?;
 
-        Ok(())
+        Ok(user_with_token)
     }
 
     fn validate_token(&self, user_token: UserToken) -> Result<(), TokenServiceError> {
