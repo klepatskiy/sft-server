@@ -2,9 +2,8 @@ use tonic::{Status};
 use std::sync::Arc;
 use async_trait::async_trait;
 use tonic::body::BoxBody;
-use tonic::codegen::http::{HeaderValue, Request};
+use tonic::codegen::http::{Request};
 use tonic_middleware::RequestInterceptor;
-use tower::{ServiceExt};
 use crate::app::error::AppError;
 use crate::domain::user::user_token::{UserWithToken};
 
