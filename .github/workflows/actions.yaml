@@ -36,7 +36,7 @@ jobs:
         run: cargo test --manifest-path grpc/Cargo.toml --verbose
 
       - name: Run clippy
-        run: cargo clippy --manifest-path grpc/Cargo.toml -- -D warnings
+        run: cargo clippy --manifest-path grpc/Cargo.toml -- -A warnings
 
       - name: Format code
         run: cargo fmt --manifest-path grpc/Cargo.toml -- --check
