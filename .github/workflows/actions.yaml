@@ -12,6 +12,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Create .env file from .env.dist
+      - run: cp grpc/.env.dist grpc/.env
+
       - name: Checkout code
         uses: actions/checkout@v3
 
