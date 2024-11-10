@@ -27,13 +27,13 @@ jobs:
           sudo apt-get install -y protobuf-compiler
 
       - name: Build project
-        run: cargo build --verbose
+        run: cargo build --manifest-path grpc/Cargo.toml --verbose
 
       - name: Run tests
-        run: cargo test --verbose
+        run: cargo test --manifest-path grpc/Cargo.toml --verbose
 
       - name: Run clippy
-        run: cargo clippy -- -D warnings
+        run: cargo clippy --manifest-path grpc/Cargo.toml -- -D warnings
 
       - name: Format code
-        run: cargo fmt -- --check
+        run: cargo fmt --manifest-path grpc/Cargo.toml -- --check
