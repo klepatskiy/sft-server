@@ -88,17 +88,17 @@ impl TokenService {
             get_user_token(token).
             await.
             map_err(|_| TokenServiceError::UserNotError)?;
-        // self.validate_token(user_with_token.user_token.clone())?;
+        self.validate_token(user_with_token.user_token.clone())?;
 
         Ok(user_with_token)
     }
 
     fn validate_token(&self, user_token: UserToken) -> Result<(), TokenServiceError> {
-        // let expiration = Utc::now();
-        //
-        // if user_token.expires_at < expiration {
-        //     return Err(TokenServiceError::VerificationError);
-        // }
+        let expiration = Utc::now();
+        
+        if user_token.expires_at < expiration {
+            return Err(TokenServiceError::VerificationError);
+        }
 
         Ok(())
     }

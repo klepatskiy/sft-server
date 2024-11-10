@@ -1,7 +1,7 @@
 pub mod container;
 
 use std::sync::Arc;
-use crate::app::command::login_user_command::{LoginUserCommandTrait, LoginUserRepository, PasswordServiceTrait};
+use crate::app::command::login_user_command::{LoginUserCommandTrait};
 
 // Интерфейс для DI контейнера
 pub trait DIContainer: Send + Sync {
