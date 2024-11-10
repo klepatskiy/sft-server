@@ -1047,31 +1047,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "grpc"
-version = "0.1.0"
-dependencies = [
- "argon2",
- "async-trait",
- "chrono",
- "dotenv",
- "install",
- "jsonwebtoken",
- "mockall",
- "prost",
- "serde",
- "sqlx",
- "thiserror 2.0.2",
- "tokio",
- "tonic",
- "tonic-build",
- "tonic-middleware",
- "tower 0.5.1",
- "url",
- "uuid",
- "vendor",
-]
-
-[[package]]
 name = "h2"
 version = "0.3.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2649,6 +2624,31 @@ dependencies = [
  "ryu",
  "serde",
  "unsafe-libyaml",
+]
+
+[[package]]
+name = "sft-grpc-server"
+version = "0.1.0"
+dependencies = [
+ "argon2",
+ "async-trait",
+ "chrono",
+ "dotenv",
+ "install",
+ "jsonwebtoken",
+ "mockall",
+ "prost",
+ "serde",
+ "sqlx",
+ "thiserror 2.0.2",
+ "tokio",
+ "tonic",
+ "tonic-build",
+ "tonic-middleware",
+ "tower 0.5.1",
+ "url",
+ "uuid",
+ "vendor",
 ]
 
 [[package]]

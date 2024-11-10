@@ -1,4 +1,4 @@
-# prjetforfun
+# server grpc
 docker postgres
 
 use cargo build to generate proto
@@ -19,5 +19,5 @@ sqlx migrate run
 
 ## start server
 ```shell
-cargo run --package prjetforfun --bin server
+cargo run --bin server
 ```
