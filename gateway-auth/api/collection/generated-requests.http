@@ -1,0 +1,11 @@
+GRPC localhost:50052/auth.AuthService/Login
+
+{
+  "email":  "klepa@example.com",
+  "password": "password"
+}
+
+
+###
+GRPC localhost:50051/auth.AuthService/GetCurrentUser
+Authorization: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIwMTkyYjMwYS1hMDEyLTc4ZTItYmIwNy04NGM1MjhjZTY0NDYiLCJleHAiOjE3NjE5MzUwMzJ9.JqPGsTPL3HE39mf0-GAFqxnqTzPriNYJLFO6H7AcolA
