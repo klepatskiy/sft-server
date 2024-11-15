@@ -1,19 +1,16 @@
 use tonic::{Request, Response, Status};
 use async_trait::async_trait;
-use jsonwebtoken::TokenData;
 use shaku::HasComponent;
 use crate::di_container::AuthContainer;
-
-pub mod auth_proto {
-    tonic::include_proto!("auth");
-}
-
 use auth_proto::auth_service_server::AuthService;
 use crate::application::command::login_command::{LoginCommand};
 use crate::application::command::refresh_token_command::RefreshTokenCommand;
 use crate::application::CommandHandler;
 use crate::auth_service::auth_proto::{LoginRequest, LoginResponse, RefreshRequest, RefreshResponse};
-use crate::domain::jwt::jwt_model::RefreshClaims;
+
+pub mod auth_proto {
+    tonic::include_proto!("auth");
+}
 
 pub struct AuthServiceImpl {
     container: AuthContainer,
@@ -60,7 +57,7 @@ impl AuthService for AuthServiceImpl {
             refresh_token: refresh_data.refresh_token,
         };
 
-        let handler: &dyn CommandHandler<RefreshTokenCommand, (TokenData<RefreshClaims>)> =
+        let handler: &dyn CommandHandler<RefreshTokenCommand, (String)> =
             self.container.resolve_ref();
 
         let token = handler

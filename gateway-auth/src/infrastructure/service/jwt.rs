@@ -1,15 +1,20 @@
 use async_trait::async_trait;
-use jsonwebtoken::{encode, decode, Header, Validation, EncodingKey, DecodingKey, TokenData};
 use chrono::{Utc, Duration};
+use jsonwebtoken::{encode, decode, Header, Validation, EncodingKey, DecodingKey, TokenData};
 use shaku::{Component, Interface};
-use crate::domain::jwt::jwt_model::{Claims, RefreshClaims};
+use thiserror::Error;
+use uuid::Uuid;
+use crate::domain::jwt::jwt_model::{Claims, ClaimsTokenType};
 
 #[async_trait]
 pub trait JwtService: Interface {
-    async fn create_jwt(&self, user_id: &str) -> Result<(String, String), jsonwebtoken::errors::Error>;
-    async fn verify_jwt(&self, token: &str) -> Result<TokenData<Claims>, jsonwebtoken::errors::Error>;
-    async fn verify_refresh_token(&self, token: &str) -> Result<TokenData<RefreshClaims>, jsonwebtoken::errors::Error>;
+    async fn create_access_token(&self, user_id: Uuid) -> Result<String, JwtServiceError>;
+    async fn create_refresh_token(&self, user_id: Uuid) -> Result<String, JwtServiceError>;
+    async fn verify_token(&self, token: &str, expected_type: ClaimsTokenType) -> Result<String, JwtServiceError>;
 }
+
+const REFRESH_TOKEN_DAY_DURATION: i64 = 30;
+const ACCESS_TOKEN_HOUR_DURATION: i64 = 1;
 
 #[derive(Component)]
 #[shaku(interface = JwtService)]
@@ -24,25 +29,70 @@ impl JwtServiceImpl {
     }
 }
 
+#[derive(Debug, Error)]
+pub enum JwtServiceError {
+    #[error("Token expire error")]
+    TokenExpireError,
+    #[error("Invalid token error")]
+    InvalidTokenError,
+    #[error("Can't create token error")]
+    CreateTokenError,
+    #[error("Some error")]
+    SomeError,
+}
+
 #[async_trait]
 impl JwtService for JwtServiceImpl {
-    async fn create_jwt(&self, user_id: &str) -> Result<(String, String), jsonwebtoken::errors::Error> {
-        let access_expiration = Utc::now().checked_add_signed(Duration::hours(1)).expect("Error with expiration").timestamp() as usize;
-        let claims = Claims { sub: user_id.to_owned(), exp: access_expiration };
-        let access_token = encode(&Header::default(), &claims, &EncodingKey::from_secret(&self.secret_key))?;
-        
-        let refresh_expiration = Utc::now().checked_add_signed(Duration::days(7)).expect("Error with expiration").timestamp() as usize;
-        let refresh_claims = RefreshClaims { sub: user_id.to_owned(), exp: refresh_expiration };
-        let refresh_token = encode(&Header::default(), &refresh_claims, &EncodingKey::from_secret(&self.refresh_secret_key))?;
-        
-        Ok((access_token, refresh_token))
+    async fn create_access_token(&self, user_id: Uuid) -> Result<String, JwtServiceError> {
+        let expiration = Utc::now()
+            .checked_add_signed(Duration::hours(ACCESS_TOKEN_HOUR_DURATION))
+            .ok_or(JwtServiceError::SomeError)?
+            .timestamp() as usize;
+
+        let claims = Claims::new_access(user_id, expiration);
+
+        encode(
+            &Header::default(),
+            &claims,
+            &EncodingKey::from_secret(&self.secret_key),
+        ).map_err(|_| JwtServiceError::CreateTokenError)
     }
 
-    async fn verify_jwt(&self, token: &str) -> Result<TokenData<Claims>, jsonwebtoken::errors::Error> {
-        decode::<Claims>(token, &DecodingKey::from_secret(&self.secret_key), &Validation::default())
+    async fn create_refresh_token(&self, user_id: Uuid) -> Result<String, JwtServiceError> {
+        let expiration = Utc::now()
+            .checked_add_signed(Duration::days(REFRESH_TOKEN_DAY_DURATION))
+            .ok_or(JwtServiceError::SomeError)?
+            .timestamp() as usize;
+
+        let claims = Claims::new_refresh(user_id, expiration);
+
+        encode(
+            &Header::default(),
+            &claims,
+            &EncodingKey::from_secret(&self.refresh_secret_key),
+        ).map_err(|_| JwtServiceError::CreateTokenError)
     }
 
-    async fn verify_refresh_token(&self, token: &str) -> Result<TokenData<RefreshClaims>, jsonwebtoken::errors::Error> {
-        decode::<RefreshClaims>(token, &DecodingKey::from_secret(&self.refresh_secret_key), &Validation::default())
+    async fn verify_token(&self, token: &str, expected_type: ClaimsTokenType) -> Result<String, JwtServiceError> {
+        let decoding_key = match expected_type {
+            ClaimsTokenType::Access => &self.secret_key,
+            ClaimsTokenType::Refresh => &self.refresh_secret_key,
+        };
+
+        let token_data = decode::<Claims>(
+            token,
+            &DecodingKey::from_secret(decoding_key),
+            &Validation::default(),
+        ).map_err(|_| JwtServiceError::InvalidTokenError)?;
+
+        if token_data.claims.token_type != expected_type {
+            return Err(JwtServiceError::InvalidTokenError);
+        }
+
+        if token_data.claims.exp < Utc::now().timestamp() as usize {
+            return Err(JwtServiceError::InvalidTokenError);
+        }
+
+        Ok(token_data.claims.sub.clone())
     }
 }

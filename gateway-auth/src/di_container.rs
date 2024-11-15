@@ -24,3 +24,24 @@ impl AuthContainer {
             .build()
     }
 }
+
+module! {
+    pub UserContainer {
+        components = [
+            JwtServiceImpl,
+            LoginCommandHandler,
+            RefreshTokenCommandHandler,
+            VerifyTokenQueryHandler
+        ],
+        providers = []
+    }
+}
+
+impl UserContainer {
+    pub fn new(secret_key: Vec<u8>, refresh_secret_key: Vec<u8>) -> Self {
+        let jwt_service = JwtServiceImpl::new(secret_key, refresh_secret_key);
+        UserContainer::builder()
+            .with_component_override(Box::new(jwt_service) as Box<dyn JwtService>)
+            .build()
+    }
+}

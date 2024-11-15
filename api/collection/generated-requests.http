@@ -1,0 +1,27 @@
+GRPC localhost:50052/auth.AuthService/Login
+
+{
+    "email":  "0192b30a-a012-78e2-bb07-84c528ce6446",
+    "password": "password"
+}
+
+
+//{
+//  "email":  "klepa@example.com",
+//  "password": "password"
+//}
+
+
+###
+GRPC localhost:50052/user.UserService/GetUser
+
+{
+  "id":  "0192b30a-a012-78e2-bb07-84c528ce6446"
+}
+
+###
+GRPC localhost:50052/user.UserService/GetCurrentUser
+
+{
+  "id":  "0192b30a-a012-78e2-bb07-84c528ce6446"
+}

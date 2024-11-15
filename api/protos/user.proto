@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package user;
+
+service UserService {
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+  rpc GetCurrentUser(GetCurrentUserRequest) returns (GetCurrentUserResponse);
+}
+
+message GetUserRequest {
+  string id = 1;
+}
+
+message GetUserResponse {
+  string id = 1;
+}
+
+message GetCurrentUserRequest {
+  string id = 1;
+}
+
+message GetCurrentUserResponse {
+  string id = 1;
+}
